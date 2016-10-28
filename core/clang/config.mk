@@ -90,6 +90,7 @@ CLANG_CONFIG_UNKNOWN_CFLAGS := \
   -Wunused-but-set-parameter \
   -Wunused-but-set-variable \
   -fdiagnostics-color \
+  -fcolor-diagnostics \
   -fdebug-prefix-map=/proc/self/cwd=
 
 # Clang flags for all host rules

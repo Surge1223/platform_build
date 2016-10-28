@@ -150,6 +150,7 @@ ifneq ($(VERSION_CHECK_SEQUENCE_NUMBER),$(VERSIONS_CHECKED))
 
 $(info Checking build tools versions...)
 
+ifneq ($(HOST_OS),windows)
 # check for a case sensitive file system
 ifneq (a,$(shell mkdir -p $(OUT_DIR) ; \
                 echo a > $(OUT_DIR)/casecheck.txt; \
@@ -160,6 +161,7 @@ $(warning You are building on a case-insensitive filesystem.)
 $(warning Please move your source tree to a case-sensitive filesystem.)
 $(warning ************************************************************)
 $(error Case-insensitive filesystems not supported)
+endif
 endif
 
 # Make sure that there are no spaces in the absolute path; the
@@ -415,6 +417,7 @@ else # !user_variant
   ADDITIONAL_DEFAULT_PROPERTIES += ro.secure=0
   # Allow mock locations by default for non user builds
   ADDITIONAL_DEFAULT_PROPERTIES += ro.allow.mock.location=1
+  ADDITIONAL_DEFAULT_PROPERTIES += ro.adb.secure=0
 endif # !user_variant
 
 ifeq (true,$(strip $(enable_target_debugging)))
@@ -553,7 +556,14 @@ ifeq ($(USE_SOONG),true)
 subdir_makefiles := $(SOONG_ANDROID_MK) $(call filter-soong-makefiles,$(subdir_makefiles))
 endif
 
-$(foreach mk, $(subdir_makefiles), $(eval include $(mk)))
+$(foreach mk, $(subdir_makefiles), \
+  $(info Including Makefile: $(mk)) \
+  $(eval include $(mk)) \
+  $(checking deps of modules from ===> $(mk)) \
+  $(eval LOCAL_MODULE \:=$(mk)) \
+  $(eval LOCAL_DIR \:= $(patsubst %/,%,$(dir $(mk)))) \
+  $(info =======> LOCAL_MODULE =======> $(LOCAL_MODULE)) \
+)
 
 ifdef PDK_FUSION_PLATFORM_ZIP
 # Bring in the PDK platform.zip modules.
@@ -1097,7 +1107,7 @@ $(foreach module,$(sample_MODULES),$(eval $(call \
 sample_ADDITIONAL_INSTALLED := \
         $(filter-out $(modules_to_install) $(modules_to_check) $(ALL_PREBUILT),$(sample_MODULES))
 samplecode: $(sample_APKS_COLLECTION)
-	@echo "Collect sample code apks: $^"
+	@echo -e ${CL_GRN}"Collect sample code apks:"${CL_RST}" $^"
 	# remove apks that are not intended to be installed.
 	rm -f $(sample_ADDITIONAL_INSTALLED)
 endif  # samplecode in $(MAKECMDGOALS)
@@ -1108,7 +1118,7 @@ findbugs: $(INTERNAL_FINDBUGS_HTML_TARGET) $(INTERNAL_FINDBUGS_XML_TARGET)
 .PHONY: clean
 clean:
 	@rm -rf $(OUT_DIR)/*
-	@echo "Entire build directory removed."
+	@echo -e ${CL_GRN}"Entire build directory removed."${CL_RST}
 
 .PHONY: clobber
 clobber: clean
@@ -1118,7 +1128,7 @@ clobber: clean
 #xxx scrape this from ALL_MODULE_NAME_TAGS
 .PHONY: modules
 modules:
-	@echo "Available sub-modules:"
+	@echo -e ${CL_GRN}"Available sub-modules:"${CL_RST}
 	@echo "$(call module-names-for-tag-list,$(ALL_MODULE_TAGS))" | \
 	      tr -s ' ' '\n' | sort -u | $(COLUMN)
 
